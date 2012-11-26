@@ -105,6 +105,15 @@
       return this.callSuper('_set', prop, value);
     },
 
+    replaceElementAt: function (index, element){
+        if(!this.paths[index]){
+            return;
+        }
+        element.group = this;
+        this.paths[index] = element;
+
+    },
+
     /**
      * Returns object representation of this path group
      * @method toObject
