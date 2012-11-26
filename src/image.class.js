@@ -43,6 +43,12 @@
      */
     clipPath: null,
 
+    /**
+     * @property
+     * @type Boolean
+     */
+     changeable: false,
+
 
     /**
      * Constructor
@@ -110,6 +116,15 @@
     },
 
     /**
+     * Indicates if the imge can be replaced by the user.
+     * @method isChangeable
+     * @return {Boolean} object with "width" and "height" properties
+     */
+     isChangeable: function(){
+        return this.changeable;
+     },
+
+    /**
      * Renders image on a specified context
      * @method render
      * @param {CanvasRenderingContext2D} ctx Context to render on
@@ -128,10 +143,10 @@
       if (!noTransform) {
         this.transform(ctx);
       }
-        if(this.clipPath){
-            this.clipPath.render(ctx);
-            ctx.clip();
-        }
+      if(this.clipPath){
+          this.clipPath.render(ctx);
+          ctx.clip();
+      }
 
       this._render(ctx);
       if (this.active && !noTransform) {
@@ -168,6 +183,7 @@
                   'transform="translate('+ (-this.width/2) + ' ' + (-this.height/2) + ')" ' +
                   'width="' + this.width + '" ' +
                   'height="' + this.height + '"' + '/>'+
+                  this.changeable ? 'changeable="true"' : "" +
               '</g>';
     },
 
@@ -178,6 +194,15 @@
      */
     getSrc: function() {
       return this.getElement().src || this.getElement()._src;
+    },
+
+    /**
+     * Sets source of an image
+     * @method setSrc
+     * @param {String} uri Source of an image
+     */
+    setSrc: function(uri) {
+       this.getElement().src = uri;
     },
 
     /**
@@ -353,6 +378,7 @@
       this.setOptions(options);
       this._setWidthHeight(options);
       this._setPreserveAspectRatio(options);
+      this.changeable = options.changeable;
     },
 
     /**
@@ -470,7 +496,7 @@
    * @static
    * @see http://www.w3.org/TR/SVG/struct.html#ImageElement
    */
-  fabric.Image.ATTRIBUTE_NAMES = 'x y width height fill fill-opacity opacity stroke stroke-width transform xlink:href preserveAspectRatio'.split(' ');
+  fabric.Image.ATTRIBUTE_NAMES = 'x y width height fill fill-opacity opacity stroke stroke-width transform xlink:href preserveAspectRatio changeable'.split(' ');
 
   /**
    * Returns {@link fabric.Image} instance from an SVG element
@@ -485,6 +511,8 @@
     options || (options = { });
 
     var parsedAttributes = fabric.parseAttributes(element, fabric.Image.ATTRIBUTE_NAMES);
+
+    parsedAttributes.changeable = parsedAttributes.changeable==="true" || false;
 
     fabric.Image.fromURL(parsedAttributes['xlink:href'], callback, parsedAttributes);
   };
