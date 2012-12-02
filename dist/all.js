@@ -3450,7 +3450,8 @@ fabric.util.string = {
     'font-size':        'fontSize',
     'font-weight':      'fontWeight',
     'font-style':       'fontStyle',
-    'font-family':      'fontFamily'
+    'font-family':      'fontFamily',
+    'clip-path':        'clipPath'
   };
 
   function normalizeAttr(attr) {
@@ -3499,6 +3500,11 @@ fabric.util.string = {
         }
         if (attr === 'transform') {
           value = fabric.parseTransformAttribute(value);
+        }
+        if (attr === 'clip-path'){
+            // TODO: distinction between url and element needed
+            value = value.replace('url(#','').replace(')','');
+            value = fabric.clipPaths[value] || '';
         }
         attr = normalizeAttr(attr);
         memo[attr] = isNaN(parsed) ? value : parsed;
@@ -3792,6 +3798,73 @@ fabric.util.string = {
   }
 
   /**
+   * Returns clip paths for a given SVG document
+   * @static
+   * @function
+   * @memberOf fabric
+   * @method getClipPaths
+   * @param {SVGDocument} doc SVG document to parse
+   * @return {Object} Clip paths of this document
+   */
+  function getClipPaths(doc){
+      var clipPaths = doc.getElementsByTagName('clipPath'),
+          allPaths = {};
+
+      for (var i = 0, len = clipPaths.length; i < len; i++) {
+          var clipPath = clipPaths[i];
+          if(!clipPath.attributes.id){
+              continue;
+          }
+
+          //TODO: add parsing of elements here. Do not rely on presence of 'use' element.
+          var elementName = clipPath.firstElementChild.nodeName;
+          if(elementName === 'use'){
+              var targetId = clipPath.firstElementChild.attributes['xlink:href'].value.substr(1);
+              if (targetId && fabric.allDefs[targetId]){
+                  allPaths[clipPath.attributes.id.value] = fabric.allDefs[targetId];
+              }
+          } else {
+              fabric.parseElements([clipPath.firstElementChild], function(instances) {
+                      allPaths[clipPath.attributes.id.value] = instances[0];
+              })
+          }
+
+
+      }
+      return allPaths;
+  }
+
+  /**
+   * Returns all definitions for a given SVG document
+   * @static
+   * @function
+   * @memberOf fabric
+   * @method getAllDefs
+   * @param {SVGDocument} doc SVG document to parse
+   * @return {Object} Definitions of this document
+   */
+  function getAllDefs(doc){
+      var defs = doc.getElementsByTagName('defs'),
+          allDefs = {},
+          elements = [];
+
+      for (var i = 0, len = defs.length; i < len; i++) {
+          elements.push(defs[i].firstElementChild);
+      }
+
+      fabric.parseElements(elements, function(instances) {
+          for (var i = 0, len = instances.length; i < len; i++) {
+              var instance = instances[i];
+              if(instance.id != null ){
+                  allDefs[instance.id] = instance;
+              }
+          }
+      })
+      return allDefs;
+    }
+
+
+  /**
    * Returns CSS rules for a given SVG document
    * @static
    * @function
@@ -3947,6 +4020,8 @@ fabric.util.string = {
 
       fabric.gradientDefs = fabric.getGradientDefs(doc);
       fabric.cssRules = getCSSRules(doc);
+      fabric.allDefs = getAllDefs(doc);
+      fabric.clipPaths = getClipPaths(doc);
 
       // Precedence of rules:   style > class > attribute
 
@@ -7797,6 +7872,13 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
   fabric.Object = fabric.util.createClass(/** @scope fabric.Object.prototype */ {
 
     /**
+     * ID of an object
+     * @property
+     * @type String
+     */
+    id:                         null,
+
+    /**
      * Type of an object (rect, circle, path, etc)
      * @property
      * @type String
@@ -8003,10 +8085,10 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
      * @type Array
      */
     stateProperties:  (
-      'top left width height scaleX scaleY flipX flipY ' +
+      'id top left width height scaleX scaleY flipX flipY ' +
       'angle opacity cornersize fill overlayFill ' +
       'stroke strokeWidth strokeDashArray fillRule ' +
-      'borderScaleFactor transformMatrix selectable'
+      'borderScaleFactor transformMatrix selectable clipPath'
     ).split(' '),
 
     /**
@@ -8079,6 +8161,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
       var NUM_FRACTION_DIGITS = fabric.Object.NUM_FRACTION_DIGITS;
 
       var object = {
+        id:               this.id,
         type:             this.type,
         left:             toFixed(this.left, NUM_FRACTION_DIGITS),
         top:              toFixed(this.top, NUM_FRACTION_DIGITS),
@@ -9735,6 +9818,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
      */
     toSVG: function() {
       return ('<circle ' +
+        (this.get('id')!=null ? 'id="' + this.get('id') + '"' : '') +
         'cx="0" cy="0" ' +
         'r="' + this.radius + '" ' +
         'style="' + this.getSvgStyles() + '" ' +
@@ -9804,7 +9888,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
    * @static
    * @see: http://www.w3.org/TR/SVG/shapes.html#CircleElement
    */
-  fabric.Circle.ATTRIBUTE_NAMES = 'cx cy r fill fill-opacity opacity stroke stroke-width transform'.split(' ');
+  fabric.Circle.ATTRIBUTE_NAMES = 'id cx cy r fill fill-opacity opacity stroke stroke-width transform'.split(' ');
 
   /**
    * Returns {@link fabric.Circle} instance from an SVG element
@@ -10290,6 +10374,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
      */
     toSVG: function() {
       return '<rect ' +
+              (this.id!=null ? 'id="' + this.id + '"' : '') +
               'x="' + (-1 * this.width / 2) + '" y="' + (-1 * this.height / 2) + '" ' +
               'rx="' + this.get('rx') + '" ry="' + this.get('ry') + '" ' +
               'width="' + this.width + '" height="' + this.height + '" ' +
@@ -10305,7 +10390,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
    * List of attribute names to account for when parsing SVG element (used by `fabric.Rect.fromElement`)
    * @static
    */
-  fabric.Rect.ATTRIBUTE_NAMES = 'x y width height rx ry fill fill-opacity opacity stroke stroke-width transform'.split(' ');
+  fabric.Rect.ATTRIBUTE_NAMES = 'id x y width height rx ry fill fill-opacity opacity stroke stroke-width transform'.split(' ');
 
   /**
    * @private
@@ -11540,6 +11625,15 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
       return this.callSuper('_set', prop, value);
     },
 
+    replaceElementAt: function (index, element){
+        if(!this.paths[index]){
+            return;
+        }
+        element.group = this;
+        this.paths[index] = element;
+
+    },
+
     /**
      * Returns object representation of this path group
      * @method toObject
@@ -12211,6 +12305,12 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
      */
     clipPath: null,
 
+    /**
+     * @property
+     * @type Boolean
+     */
+     changeable: false,
+
 
     /**
      * Constructor
@@ -12278,17 +12378,39 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
     },
 
     /**
+     * Indicates if the imge can be replaced by the user.
+     * @method isChangeable
+     * @return {Boolean} object with "width" and "height" properties
+     */
+     isChangeable: function(){
+        return this.changeable;
+     },
+
+    /**
      * Renders image on a specified context
      * @method render
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
     render: function(ctx, noTransform) {
-      ctx.save();
-      var m = this.transformMatrix;
-      this._preserveAspectRatio();
+        ctx.save();
+        var m = this.transformMatrix;
+        this._preserveAspectRatio();
+
+        if(this.clipPath){
+            if (this.group) {
+                this.clipPath.set('left', (this.group.width - this.clipPath.width)/-2 );
+                this.clipPath.set('top', (this.group.height - this.clipPath.height)/-2 );
+            }
+            this.clipPath.set('stroke', null);
+            this.clipPath.set('fill', null);
+            this.clipPath.render(ctx);
+            ctx.clip();
+        }
+
       if (this.group) {
         ctx.translate(-this.group.width/2 + this.width/2 + this.left, -this.group.height/2 + this.height/2 + this.top);
       }
+
       if (m) {
         ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
       }
@@ -12296,10 +12418,8 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
       if (!noTransform) {
         this.transform(ctx);
       }
-        if(this.clipPath){
-            this.clipPath.render(ctx);
-            ctx.clip();
-        }
+
+
 
       this._render(ctx);
       if (this.active && !noTransform) {
@@ -12336,6 +12456,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
                   'transform="translate('+ (-this.width/2) + ' ' + (-this.height/2) + ')" ' +
                   'width="' + this.width + '" ' +
                   'height="' + this.height + '"' + '/>'+
+                  this.changeable ? 'changeable="true"' : "" +
               '</g>';
     },
 
@@ -12346,6 +12467,15 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
      */
     getSrc: function() {
       return this.getElement().src || this.getElement()._src;
+    },
+
+    /**
+     * Sets source of an image
+     * @method setSrc
+     * @param {String} uri Source of an image
+     */
+    setSrc: function(uri) {
+       this.getElement().src = uri;
     },
 
     /**
@@ -12521,6 +12651,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
       this.setOptions(options);
       this._setWidthHeight(options);
       this._setPreserveAspectRatio(options);
+      this.changeable = options.changeable;
     },
 
     /**
@@ -12638,7 +12769,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
    * @static
    * @see http://www.w3.org/TR/SVG/struct.html#ImageElement
    */
-  fabric.Image.ATTRIBUTE_NAMES = 'x y width height fill fill-opacity opacity stroke stroke-width transform xlink:href preserveAspectRatio'.split(' ');
+  fabric.Image.ATTRIBUTE_NAMES = 'x y width height fill fill-opacity opacity stroke stroke-width transform xlink:href preserveAspectRatio changeable clip-path'.split(' ');
 
   /**
    * Returns {@link fabric.Image} instance from an SVG element
@@ -12653,6 +12784,8 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
     options || (options = { });
 
     var parsedAttributes = fabric.parseAttributes(element, fabric.Image.ATTRIBUTE_NAMES);
+
+    parsedAttributes.changeable = parsedAttributes.changeable==="true" || false;
 
     fabric.Image.fromURL(parsedAttributes['xlink:href'], callback, parsedAttributes);
   };
