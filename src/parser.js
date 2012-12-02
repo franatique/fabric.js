@@ -26,7 +26,8 @@
     'font-size':        'fontSize',
     'font-weight':      'fontWeight',
     'font-style':       'fontStyle',
-    'font-family':      'fontFamily'
+    'font-family':      'fontFamily',
+    'clip-path':        'clipPath'
   };
 
   function normalizeAttr(attr) {
@@ -75,6 +76,11 @@
         }
         if (attr === 'transform') {
           value = fabric.parseTransformAttribute(value);
+        }
+        if (attr === 'clip-path'){
+            // TODO: distinction between url and element needed
+            value = value.replace('url(#','').replace(')','');
+            value = fabric.clipPaths[value] || '';
         }
         attr = normalizeAttr(attr);
         memo[attr] = isNaN(parsed) ? value : parsed;
@@ -368,6 +374,73 @@
   }
 
   /**
+   * Returns clip paths for a given SVG document
+   * @static
+   * @function
+   * @memberOf fabric
+   * @method getClipPaths
+   * @param {SVGDocument} doc SVG document to parse
+   * @return {Object} Clip paths of this document
+   */
+  function getClipPaths(doc){
+      var clipPaths = doc.getElementsByTagName('clipPath'),
+          allPaths = {};
+
+      for (var i = 0, len = clipPaths.length; i < len; i++) {
+          var clipPath = clipPaths[i];
+          if(!clipPath.attributes.id){
+              continue;
+          }
+
+          //TODO: add parsing of elements here. Do not rely on presence of 'use' element.
+          var elementName = clipPath.firstElementChild.nodeName;
+          if(elementName === 'use'){
+              var targetId = clipPath.firstElementChild.attributes['xlink:href'].value.substr(1);
+              if (targetId && fabric.allDefs[targetId]){
+                  allPaths[clipPath.attributes.id.value] = fabric.allDefs[targetId];
+              }
+          } else {
+              fabric.parseElements([clipPath.firstElementChild], function(instances) {
+                      allPaths[clipPath.attributes.id.value] = instances[0];
+              })
+          }
+
+
+      }
+      return allPaths;
+  }
+
+  /**
+   * Returns all definitions for a given SVG document
+   * @static
+   * @function
+   * @memberOf fabric
+   * @method getAllDefs
+   * @param {SVGDocument} doc SVG document to parse
+   * @return {Object} Definitions of this document
+   */
+  function getAllDefs(doc){
+      var defs = doc.getElementsByTagName('defs'),
+          allDefs = {},
+          elements = [];
+
+      for (var i = 0, len = defs.length; i < len; i++) {
+          elements.push(defs[i].firstElementChild);
+      }
+
+      fabric.parseElements(elements, function(instances) {
+          for (var i = 0, len = instances.length; i < len; i++) {
+              var instance = instances[i];
+              if(instance.id != null ){
+                  allDefs[instance.id] = instance;
+              }
+          }
+      })
+      return allDefs;
+    }
+
+
+  /**
    * Returns CSS rules for a given SVG document
    * @static
    * @function
@@ -523,6 +596,8 @@
 
       fabric.gradientDefs = fabric.getGradientDefs(doc);
       fabric.cssRules = getCSSRules(doc);
+      fabric.allDefs = getAllDefs(doc);
+      fabric.clipPaths = getClipPaths(doc);
 
       // Precedence of rules:   style > class > attribute
 

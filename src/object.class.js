@@ -21,6 +21,13 @@
   fabric.Object = fabric.util.createClass(/** @scope fabric.Object.prototype */ {
 
     /**
+     * ID of an object
+     * @property
+     * @type String
+     */
+    id:                         null,
+
+    /**
      * Type of an object (rect, circle, path, etc)
      * @property
      * @type String
@@ -227,10 +234,10 @@
      * @type Array
      */
     stateProperties:  (
-      'top left width height scaleX scaleY flipX flipY ' +
+      'id top left width height scaleX scaleY flipX flipY ' +
       'angle opacity cornersize fill overlayFill ' +
       'stroke strokeWidth strokeDashArray fillRule ' +
-      'borderScaleFactor transformMatrix selectable'
+      'borderScaleFactor transformMatrix selectable clipPath'
     ).split(' '),
 
     /**
@@ -303,6 +310,7 @@
       var NUM_FRACTION_DIGITS = fabric.Object.NUM_FRACTION_DIGITS;
 
       var object = {
+        id:               this.id,
         type:             this.type,
         left:             toFixed(this.left, NUM_FRACTION_DIGITS),
         top:              toFixed(this.top, NUM_FRACTION_DIGITS),

@@ -130,12 +130,25 @@
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
     render: function(ctx, noTransform) {
-      ctx.save();
-      var m = this.transformMatrix;
-      this._preserveAspectRatio();
+        ctx.save();
+        var m = this.transformMatrix;
+        this._preserveAspectRatio();
+
+        if(this.clipPath){
+            if (this.group) {
+                this.clipPath.set('left', (this.group.width - this.clipPath.width)/-2 );
+                this.clipPath.set('top', (this.group.height - this.clipPath.height)/-2 );
+            }
+            this.clipPath.set('stroke', null);
+            this.clipPath.set('fill', null);
+            this.clipPath.render(ctx);
+            ctx.clip();
+        }
+
       if (this.group) {
         ctx.translate(-this.group.width/2 + this.width/2 + this.left, -this.group.height/2 + this.height/2 + this.top);
       }
+
       if (m) {
         ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
       }
@@ -143,10 +156,8 @@
       if (!noTransform) {
         this.transform(ctx);
       }
-      if(this.clipPath){
-          this.clipPath.render(ctx);
-          ctx.clip();
-      }
+
+
 
       this._render(ctx);
       if (this.active && !noTransform) {
@@ -496,7 +507,7 @@
    * @static
    * @see http://www.w3.org/TR/SVG/struct.html#ImageElement
    */
-  fabric.Image.ATTRIBUTE_NAMES = 'x y width height fill fill-opacity opacity stroke stroke-width transform xlink:href preserveAspectRatio changeable'.split(' ');
+  fabric.Image.ATTRIBUTE_NAMES = 'x y width height fill fill-opacity opacity stroke stroke-width transform xlink:href preserveAspectRatio changeable clip-path'.split(' ');
 
   /**
    * Returns {@link fabric.Image} instance from an SVG element
