@@ -44,10 +44,11 @@
     /**
      * Returns object representation of an instance
      * @method toObject
+     * @param {Array} propertiesToInclude
      * @return {Object} object representation of an instance
      */
-    toObject: function() {
-      return extend(this.callSuper('toObject'), {
+    toObject: function(propertiesToInclude) {
+      return extend(this.callSuper('toObject', propertiesToInclude), {
         rx: this.get('rx'),
         ry: this.get('ry')
       });
@@ -152,7 +153,7 @@
   };
 
   /**
-   * Returns fabric.Ellipse instance from an object representation
+   * Returns {@link fabric.Ellipse} instance from an object representation
    * @static
    * @method fabric.Ellipse.fromObject
    * @param {Object} object Object to create an instance from

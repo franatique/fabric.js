@@ -7,8 +7,7 @@
       toFixed = fabric.util.toFixed,
       capitalize = fabric.util.string.capitalize,
       getPointer = fabric.util.getPointer,
-      degreesToRadians = fabric.util.degreesToRadians,
-      slice = Array.prototype.slice;
+      degreesToRadians = fabric.util.degreesToRadians;
 
   if (fabric.Object) {
     return;
@@ -95,18 +94,21 @@
     angle:                    0,
 
     /**
+     * Size of object's corners
      * @property
      * @type Number
      */
     cornersize:               12,
 
     /**
+     * When true, object's corners are rendered as transparent inside (i.e. stroke instead of fill)
      * @property
      * @type Boolean
      */
     transparentCorners:       true,
 
     /**
+     * Padding between object and its borders
      * @property
      * @type Number
      */
@@ -143,12 +145,14 @@
     overlayFill:              null,
 
     /**
+     * When `true`, an object is rendered via stroke
      * @property
      * @type String
      */
     stroke:                   null,
 
     /**
+     * Width of a stroke used to render this object
      * @property
      * @type Number
      */
@@ -241,17 +245,6 @@
     ).split(' '),
 
     /**
-     * @method callSuper
-     * @param {String} methodName
-     */
-    callSuper: function(methodName) {
-      var fn = this.constructor.superclass.prototype[methodName];
-      return (arguments.length > 1)
-        ? fn.apply(this, slice.call(arguments, 1))
-        : fn.call(this);
-    },
-
-    /**
      * Constructor
      * @method initialize
      * @param {Object} [options] Options object
@@ -263,7 +256,8 @@
     },
 
     /**
-     * @method initGradient
+     * @private
+     * @method _initGradient
      */
     _initGradient: function(options) {
       if (options.fill && typeof options.fill === 'object' && !(options.fill instanceof fabric.Gradient)) {
@@ -276,12 +270,8 @@
      * @param {Object} [options]
      */
     setOptions: function(options) {
-      var i = this.stateProperties.length, prop;
-      while (i--) {
-        prop = this.stateProperties[i];
-        if (prop in options) {
-          this.set(prop, options[prop]);
-        }
+      for (var prop in options) {
+        this.set(prop, options[prop]);
       }
       this._initGradient(options);
     },
@@ -303,9 +293,10 @@
     /**
      * Returns an object representation of an instance
      * @method toObject
-     * @return {Object}
+     * @param {Array} propertiesToInclude
+     * @return {Object} object representation of an instance
      */
-    toObject: function() {
+    toObject: function(propertiesToInclude) {
 
       var NUM_FRACTION_DIGITS = fabric.Object.NUM_FRACTION_DIGITS;
 
@@ -338,6 +329,7 @@
       if (!this.includeDefaultValues) {
         object = this._removeDefaultValues(object);
       }
+      fabric.util.populateWithProperties(this, object, propertiesToInclude);
 
       return object;
     },
@@ -345,10 +337,12 @@
     /**
      * Returns (dataless) object representation of an instance
      * @method toDatalessObject
+     * @param {Array} propertiesToInclude
+     * @return {Object} object representation of an instance
      */
-    toDatalessObject: function() {
+    toDatalessObject: function(propertiesToInclude) {
       // will be overwritten by subclasses
-      return this.toObject();
+      return this.toObject(propertiesToInclude);
     },
 
     /**
@@ -796,6 +790,10 @@
       return this;
     },
 
+    /**
+     * @private
+     * @method _renderDashedStroke
+     */
     _renderDashedStroke: function(ctx) {
 
       if (1 & this.strokeDashArray.length /* if odd number of items */) {
@@ -812,6 +810,7 @@
       ctx.save();
       ctx.beginPath();
 
+      /** @ignore */
       function renderSide(xMultiplier, yMultiplier) {
 
         var lineLength = 0,
@@ -969,14 +968,15 @@
     /**
      * Clones an instance
      * @method clone
-     * @param {Object} options object
+     * @param {Function} callback Callback is invoked with a clone as a first argument
+     * @param {Array} propertiesToInclude
      * @return {fabric.Object} clone of an instance
      */
-    clone: function(options) {
+    clone: function(callback, propertiesToInclude) {
       if (this.constructor.fromObject) {
-        return this.constructor.fromObject(this.toObject(), options);
+        return this.constructor.fromObject(this.toObject(propertiesToInclude), callback);
       }
-      return new fabric.Object(this.toObject());
+      return new fabric.Object(this.toObject(propertiesToInclude));
     },
 
     /**
@@ -1515,11 +1515,12 @@
     /**
      * Returns a JSON representation of an instance
      * @method toJSON
+     * @param {Array} propertiesToInclude
      * @return {String} json
      */
-    toJSON: function() {
+    toJSON: function(propertiesToInclude) {
       // delegate, not alias
-      return this.toObject();
+      return this.toObject(propertiesToInclude);
     },
 
     /**
@@ -1697,6 +1698,7 @@
   }
 
   /**
+   * Alias for {@link fabric.Object.prototype.setAngle}
    * @alias rotate -> setAngle
    */
   fabric.Object.prototype.rotate = fabric.Object.prototype.setAngle;

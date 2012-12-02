@@ -115,10 +115,11 @@
     /**
      * Returns object representation of an instance
      * @methd toObject
-     * @return {Object}
+     * @param {Array} propertiesToInclude
+     * @return {Object} object representation of an instance
      */
-    toObject: function() {
-      return extend(this.callSuper('toObject'), {
+    toObject: function(propertiesToInclude) {
+      return extend(this.callSuper('toObject', propertiesToInclude), {
         x1: this.get('x1'),
         y1: this.get('y1'),
         x2: this.get('x2'),
@@ -145,7 +146,7 @@
   });
 
   /**
-   * List of attribute names to account for when parsing SVG element (used by `fabric.Line.fromElement`)
+   * List of attribute names to account for when parsing SVG element (used by {@link fabric.Line.fromElement})
    * @static
    * @see http://www.w3.org/TR/SVG/shapes.html#LineElement
    */

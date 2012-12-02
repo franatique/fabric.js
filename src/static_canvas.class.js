@@ -55,7 +55,7 @@
     backgroundImageOpacity: 1.0,
 
     /**
-     * Indicatus whether the background image should be stretched to fit the
+     * Indicates whether the background image should be stretched to fit the
      * dimensions of the canvas instance.
      * @property
      * @type Boolean
@@ -99,9 +99,11 @@
     stateful: true,
 
     /**
-     * Indicates whether fabric.Canvas#add should also re-render canvas.
+     * Indicates whether {@link fabric.Canvas.prototype.add} should also re-render canvas.
      * Disabling this option could give a great performance boost when adding a lot of objects to canvas at once
      * (followed by a manual rendering after addition)
+     * @property
+     * @type Boolean
      */
     renderOnAddition: true,
 
@@ -129,6 +131,10 @@
       /* NOOP */
     },
 
+     /**
+      * @method _initStatic
+      * @private
+      */
     _initStatic: function(el, options) {
       this._objects = [];
 
@@ -161,7 +167,7 @@
      * @method setOverlayImage
      * @param {String} url url of an image to set overlay to
      * @param {Function} callback callback to invoke when image is loaded and set as an overlay
-     * @param {Object} options optional options to set for the overlay image
+     * @param {Object} [options] optional options to set for the overlay image
      * @return {fabric.Canvas} thisArg
      * @chainable
      */
@@ -185,7 +191,7 @@
      * @method setBackgroundImage
      * @param {String} url url of an image to set background to
      * @param {Function} callback callback to invoke when image is loaded and set as background
-     * @param {Object} options optional options to set for the background image
+     * @param {Object} [options] optional options to set for the background image
      * @return {fabric.Canvas} thisArg
      * @chainable
      */
@@ -207,7 +213,6 @@
     /**
      * @private
      * @method _createCanvasElement
-     * @param {Element} element
      */
     _createCanvasElement: function() {
       var element = fabric.document.createElement('canvas');
@@ -221,6 +226,10 @@
       return element;
     },
 
+    /**
+     * @method _initCanvasElement
+     * @param {HTMLElement} element
+     */
     _initCanvasElement: function(element) {
       if (typeof element.getContext === 'undefined' &&
           typeof G_vmlCanvasManager !== 'undefined' &&
@@ -252,7 +261,7 @@
     },
 
     /**
-     * Creates a secondary canvas
+     * Creates a bottom canvas
      * @method _createLowerCanvas
      */
     _createLowerCanvas: function (canvasEl) {
@@ -365,12 +374,20 @@
       return this.lowerCanvasEl;
     },
 
-    // placeholder
+    /**
+     * Returns currently selected object, if any
+     * @method getActiveObject
+     * @return {fabric.Object}
+     */
     getActiveObject: function() {
       return null;
     },
 
-    // placeholder
+    /**
+     * Returns currently selected group of object, if any
+     * @method getActiveGroup
+     * @return {fabric.Group}
+     */
     getActiveGroup: function() {
       return null;
     },
@@ -397,9 +414,10 @@
     },
 
     /**
-     * Adds objects to canvas, then renders canvas;
+     * Adds objects to canvas, then renders canvas (if `renderOnAddition` is not `false`).
      * Objects should be instances of (or inherit from) fabric.Object
      * @method add
+     * @param [...] Zero or more fabric instances
      * @return {fabric.Canvas} thisArg
      * @chainable
      */
@@ -674,16 +692,18 @@
           scaledWidth = origWidth * multiplier,
           scaledHeight = origHeight * multiplier,
           activeObject = this.getActiveObject(),
-          activeGroup = this.getActiveGroup();
+          activeGroup = this.getActiveGroup(),
+
+          ctx = this.contextTop || this.contextContainer;
 
       this.setWidth(scaledWidth).setHeight(scaledHeight);
-      this.contextTop.scale(multiplier, multiplier);
+      ctx.scale(multiplier, multiplier);
 
       if (activeGroup) {
         // not removing group due to complications with restoring it with correct state afterwords
         this._tempRemoveBordersCornersFromGroup(activeGroup);
       }
-      else if (activeObject) {
+      else if (activeObject && this.deactivateAll) {
         this.deactivateAll();
       }
 
@@ -696,13 +716,13 @@
 
       var dataURL = this.toDataURL(format, quality);
 
-      this.contextTop.scale(1 / multiplier,  1 / multiplier);
+      ctx.scale(1 / multiplier,  1 / multiplier);
       this.setWidth(origWidth).setHeight(origHeight);
 
       if (activeGroup) {
         this._restoreBordersCornersOnGroup(activeGroup);
       }
-      else if (activeObject) {
+      else if (activeObject && this.setActiveObject) {
         this.setActiveObject(activeObject);
       }
 
@@ -711,6 +731,10 @@
       return dataURL;
     },
 
+    /**
+     * @private
+     * @method _tempRemoveBordersCornersFromGroup
+     */
     _tempRemoveBordersCornersFromGroup: function(group) {
       group.origHideCorners = group.hideCorners;
       group.origBorderColor = group.borderColor;
@@ -723,6 +747,11 @@
         o.borderColor = 'rgba(0,0,0,0)';
       });
     },
+
+    /**
+     * @private
+     * @method _restoreBordersCornersOnGroup
+     */
     _restoreBordersCornersOnGroup: function(group) {
       group.hideCorners = group.origHideCorners;
       group.borderColor = group.origBorderColor;
@@ -785,35 +814,38 @@
     /**
      * Returs dataless JSON representation of canvas
      * @method toDatalessJSON
+     * @param {Array} propertiesToInclude
      * @return {String} json string
      */
-    toDatalessJSON: function () {
-      return this.toDatalessObject();
+    toDatalessJSON: function (propertiesToInclude) {
+      return this.toDatalessObject(propertiesToInclude);
     },
 
     /**
      * Returns object representation of canvas
      * @method toObject
-     * @return {Object}
+     * @param {Array} propertiesToInclude
+     * @return {Object} object representation of an instance
      */
-    toObject: function () {
-      return this._toObjectMethod('toObject');
+    toObject: function (propertiesToInclude) {
+      return this._toObjectMethod('toObject', propertiesToInclude);
     },
 
     /**
      * Returns dataless object representation of canvas
      * @method toDatalessObject
-     * @return {Object}
+     * @param {Array} propertiesToInclude
+     * @return {Object} object representation of an instance
      */
-    toDatalessObject: function () {
-      return this._toObjectMethod('toDatalessObject');
+    toDatalessObject: function (propertiesToInclude) {
+      return this._toObjectMethod('toDatalessObject', propertiesToInclude);
     },
 
     /**
      * @private
      * @method _toObjectMethod
      */
-    _toObjectMethod: function (methodName) {
+    _toObjectMethod: function (methodName, propertiesToInclude) {
       var data = {
         objects: this._objects.map(function (instance) {
           // TODO (kangax): figure out how to clean this up
@@ -822,7 +854,7 @@
             originalValue = instance.includeDefaultValues;
             instance.includeDefaultValues = false;
           }
-          var object = instance[methodName]();
+          var object = instance[methodName](propertiesToInclude);
           if (!this.includeDefaultValues) {
             instance.includeDefaultValues = originalValue;
           }
@@ -840,6 +872,7 @@
         data.overlayImageLeft = this.overlayImageLeft;
         data.overlayImageTop = this.overlayImageTop;
       }
+      fabric.util.populateWithProperties(this, data, propertiesToInclude);
       return data;
     },
 
