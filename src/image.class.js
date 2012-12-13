@@ -136,8 +136,8 @@
 
         if(this.clipPath){
             if (this.group) {
-                this.clipPath.set('left', (this.group.width - this.clipPath.width)/-2 );
-                this.clipPath.set('top', (this.group.height - this.clipPath.height)/-2 );
+                //this.clipPath.set('left', (this.group.width - this.clipPath.width)/-2 + this.clipPath.left);
+                //this.clipPath.set('top', (this.group.height - this.clipPath.height)/-2 + this.clipPath.top);
             }
             this.clipPath.set('stroke', null);
             this.clipPath.set('fill', null);
@@ -150,7 +150,8 @@
       }
 
       if (m) {
-        ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+        //ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+        ctx.transform(1, 0, 0, 1, 0, 0);
       }
 
       if (!noTransform) {
