@@ -1,8 +1,24 @@
 (function() {
 
+  var path = require("path");
+
   QUnit.module('fabric.util');
 
   function K (x) { return x }
+
+  function getAbsolutePath(path) {
+    var isAbsolute = /^https?:/.test(path);
+    if (isAbsolute) return path;
+    var imgEl = _createImageElement();
+    imgEl.src = path;
+    var src = imgEl.src;
+    imgEl = null;
+    return src;
+  }
+
+  var IMG_URL = fabric.isLikelyNode
+    ? path.join(__dirname, '../fixtures/', 'very_large_image.jpg')
+    : getAbsolutePath('../fixtures/very_large_image.jpg');
 
   test('fabric.util.toFixed', function(){
     ok(typeof fabric.util.toFixed == 'function');
@@ -380,29 +396,35 @@
     }, 1000);
   });
 
-  // asyncTest('fabric.util.loadImage', function() {
-  //   ok(typeof fabric.util.loadImage == 'function');
+  asyncTest('fabric.util.loadImage', function() {
+    ok(typeof fabric.util.loadImage == 'function');
 
-  //   var callbackInvoked = false,
-  //       objectPassedToCallback;
+    var callbackInvoked = false,
+        objectPassedToCallback,
+        NodeCanvasImage = require('canvas').Image;
 
-  //   fabric.util.loadImage('../fixtures/very_large_image.jpg', function(obj) {
-  //     callbackInvoked = true;
-  //     objectPassedToCallback = obj;
-  //   });
+    if (IMG_URL.indexOf('/home/travis') === 0) {
+      // image can not be accessed on travis so we're returning early
+      start();
+      return;
+    }
 
-  //   setTimeout(function() {
-  //     ok(callbackInvoked, 'callback should be invoked');
+    fabric.util.loadImage(IMG_URL, function(obj) {
+      callbackInvoked = true;
+      objectPassedToCallback = obj;
+    });
 
-  //     if (objectPassedToCallback) {
-  //       ok(objectPassedToCallback.tagName && objectPassedToCallback.tagName.toUpperCase() === 'IMG', 'object passed to callback should be an image element');
-  //       var oImg = new fabric.Image(objectPassedToCallback);
-  //       ok(/fixtures\/very_large_image\.jpg$/.test(oImg.getSrc()), 'image should have correct src');
-  //     }
+    setTimeout(function() {
+      ok(callbackInvoked, 'callback should be invoked');
 
-  //     start();
-  //   }, 2000);
-  // });
+      if (objectPassedToCallback) {
+        var oImg = new fabric.Image(objectPassedToCallback);
+        ok(/fixtures\/very_large_image\.jpg$/.test(oImg.getSrc()), 'image should have correct src');
+      }
+
+      start();
+    }, 2000);
+  });
 
   var SVG_WITH_1_ELEMENT = '<?xml version="1.0"?>\
     <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\

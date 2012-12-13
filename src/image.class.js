@@ -195,8 +195,8 @@
                   // so that object's center aligns with container's left/top
                   'transform="translate('+ (-this.width/2) + ' ' + (-this.height/2) + ')" ' +
                   'width="' + this.width + '" ' +
-                  'height="' + this.height + '"' + '/>'+
-                  this.changeable ? 'changeable="true"' : "" +
+                   this.changeable ? 'changeable="true"' : "" +
+                  'height="' + this.height + '"' + '/>'
               '</g>';
     },
 
