@@ -227,6 +227,8 @@
    * @method instantiatePaths
    */
   function instantiatePaths(paths) {
+    // TODO: bulletproff this for async elements
+    // undefined objects are inseret if async element is contained n in path group
     for (var i = 0, len = paths.length; i < len; i++) {
       if (!(paths[i] instanceof fabric.Object)) {
         var klassName = camelize(capitalize(paths[i].type));

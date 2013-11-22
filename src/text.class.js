@@ -257,14 +257,14 @@
 
       var textLines = this.text.split(/\r?\n/);
 
-      this.width = this._getTextWidth(ctx, textLines);
+          this.width = this._getTextWidth(ctx, textLines);
       this.height = this._getTextHeight(ctx, textLines);
 
       this._renderTextBackground(ctx, textLines);
 
       if (this.textAlign !== 'left') {
         ctx.save();
-        ctx.translate(this.textAlign === 'center' ? (this.width / 2) : this.width, 0);
+        ctx.translate(this.textAlign === 'center' ? this.left  : this.left - this.width/2, 0);
       }
 
       this._setTextShadow(ctx);

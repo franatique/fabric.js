@@ -138,6 +138,8 @@
             if (this.group) {
                 //this.clipPath.set('left', (this.group.width - this.clipPath.width)/-2 + this.clipPath.left);
                 //this.clipPath.set('top', (this.group.height - this.clipPath.height)/-2 + this.clipPath.top);
+                this.clipPath.set('left', (this.group.width - this.clipPath.width)/-2 + this.clipPath.x) ;
+                this.clipPath.set('top', (this.group.height - this.clipPath.height)/-2 + this.clipPath.y ) ;
             }
             this.clipPath.set('stroke', null);
             this.clipPath.set('fill', null);
@@ -463,8 +465,8 @@
    * @param callback {Function} optional
    */
   fabric.Image.fromObject = function(object, callback) {
-    var img = fabric.document.createElement('img'),
-        src = object.src;
+    var img = fabric.document.createElement('img'), src = object.src;
+        img.crossOrigin = 'anonymous';
 
     if (object.width) {
       img.width = object.width;
@@ -473,15 +475,18 @@
       img.height = object.height;
     }
 
+      var instance = new fabric.Image(img, object);
     /** @ignore */
     img.onload = function() {
       fabric.Image.prototype._initFilters.call(object, object);
 
-      var instance = new fabric.Image(img, object);
       callback && callback(instance);
       img = img.onload = null;
     };
     img.src = src;
+    // return image instance before source is loaded becuase path goups will get an undefined path otherwise.
+    // see PathGroup.instantiatePaths()
+    return instance;
   };
 
   /**
@@ -494,6 +499,7 @@
    */
   fabric.Image.fromURL = function(url, callback, imgOptions) {
     var img = fabric.document.createElement('img');
+      img.crossOrigin = 'anonymous';
 
     /** @ignore */
     img.onload = function() {

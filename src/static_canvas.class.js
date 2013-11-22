@@ -712,7 +712,7 @@
       this.width = origWidth;
       this.height = origHeight;
 
-      this.renderAll(true);
+      this.renderAll();
 
       var dataURL = this.toDataURL(format, quality);
 
