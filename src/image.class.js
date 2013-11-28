@@ -130,37 +130,43 @@
      * @param {CanvasRenderingContext2D} ctx Context to render on
      */
     render: function(ctx, noTransform) {
-        ctx.save();
         var m = this.transformMatrix;
         this._preserveAspectRatio();
+        ctx.save();
 
         if(this.clipPath){
-            if (this.group) {
-                //this.clipPath.set('left', (this.group.width - this.clipPath.width)/-2 + this.clipPath.left);
-                //this.clipPath.set('top', (this.group.height - this.clipPath.height)/-2 + this.clipPath.top);
-                this.clipPath.set('left', (this.group.width - this.clipPath.width)/-2 + this.clipPath.x) ;
-                this.clipPath.set('top', (this.group.height - this.clipPath.height)/-2 + this.clipPath.y ) ;
+            if(!this.locked){
+                if(this.clipPath.type == "circle"){
+                    this.clipPath.set('left', (this.group.width )/-2 + this.clipPath.left);
+                    this.clipPath.set('top', (this.group.height)/-2 + this.clipPath.top);
+                } else {
+                    this.clipPath.set('left', (this.group.width - this.clipPath.width)/-2);
+                    this.clipPath.set('top', (this.group.height - this.clipPath.height)/-2 );
+                }
+                this.locked = true;
             }
+            console.log(this.clipPath.left);
             this.clipPath.set('stroke', null);
             this.clipPath.set('fill', null);
             this.clipPath.render(ctx);
             ctx.clip();
+
         }
 
-      if (this.group) {
-        ctx.translate(-this.group.width/2 + this.width/2 + this.left, -this.group.height/2 + this.height/2 + this.top);
-      }
 
-      if (m) {
-        //ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
-        ctx.transform(1, 0, 0, 1, 0, 0);
-      }
+        if(this.group){
+            ctx.translate((this.group.width - this.width*m[0]) /-2, (this.group.height -this.height *m[3])/-2);
+        }
+
+        if (m) {
+            ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+        }
+
+
 
       if (!noTransform) {
         this.transform(ctx);
       }
-
-
 
       this._render(ctx);
       if (this.active && !noTransform) {
@@ -302,8 +308,8 @@
     _render: function(ctx) {
       ctx.drawImage(
         this.getElement(),
-        - this.width / 2,
-        -this.height / 2,
+          this.width/ -2 ,
+          this.height/ -2,
         this.width,
         this.height
       );
